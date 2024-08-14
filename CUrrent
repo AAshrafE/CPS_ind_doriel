@@ -19,10 +19,10 @@ CPS = Customer Profiling Score
 --SET @SK_AUD = CASE WHEN @SK_AUD<>-1 THEN @SK_AUD ELSE FORMAT(GETDATE(),'yyyyMMdd') END
  
 DECLARE @SK_AUD_increment AS INT
-SET @SK_AUD_increment = (SELECT ISNULL(MAX(SK_AUD_INSERT),0) FROM FCT_CPS_INDICATORS f INNER JOIN [$(JUMIA_BI_CONFIG)]..AUD_EXECUTION a on a.SK_AUD = f.SK_AUD_insert )  
+SET @SK_AUD_increment = (SELECT ISNULL(MAX(SK_AUD_INSERT),0) FROM FCT_CPS_INDICATORS f INNER JOIN [JUMIA_CFG]..AUD_EXECUTION a on a.SK_AUD = f.SK_AUD_insert )  
  
 DECLARE @minDate BIGINT 
-SET @minDate = CASE WHEN @RELOAD_DATE IS NULL THEN (SELECT ISNULL(CAST(CONVERT(VARCHAR(8),dateadd(day,-1,dat_run_date),112) AS INT),@SK_AUD_increment-1) FROM [$(JUMIA_BI_CONFIG)]..AUD_EXECUTION WHERE SK_AUD=@SK_AUD_increment)
+SET @minDate = CASE WHEN @RELOAD_DATE IS NULL THEN (SELECT ISNULL(CAST(CONVERT(VARCHAR(8),dateadd(day,-1,dat_run_date),112) AS INT),@SK_AUD_increment-1) FROM [JUMIA_CFG]..AUD_EXECUTION WHERE SK_AUD=@SK_AUD_increment)
 	ELSE CAST(CONVERT(VARCHAR(8),@RELOAD_DATE,112) AS INT) END
 
 DECLARE @minJPSegmentDate AS INT
@@ -40,7 +40,7 @@ DROP TABLE IF EXISTS #currently_blacklisted_phonenumbers;
 DROP TABLE IF EXISTS #blacklisted_phonenumber_customeraccounts;  
 DROP TABLE IF EXISTS #final_insert;  
 DROP TABLE IF EXISTS #global_customers;  
-DROP TABLE IF EXISTS #rma_abuse;  
+--DROP TABLE IF EXISTS #rma_abuse;  
 DROP TABLE IF EXISTS #BLACK_LISTED_CUSTOMERS;
 DROP TABLE IF EXISTS #TBT_JPAY_CUSTOMERS_TO_CONSIDER;
 DROP TABLE IF EXISTS #cancellation_customers;
@@ -108,12 +108,12 @@ DECLARE @GlobalPostpayment_Success_Rate_threshhold_3_orders FLOAT = .8;
 DECLARE @GlobalPostpayment_Success_Rate_threshhold_global_customers_50_order FLOAT = .99;	--PTBI-3873 Especially for Emerging countires until we create a table to maintain variables
 DECLARE @GlobalPostpayment_Success_Rate_threshhold_global_customers_100_order FLOAT = .98;	--PTBI-3873 Especially for Emerging countires until we create a table to maintain variables
 
-DECLARE @CPS_CANCELLATION_RATE FLOAT        = (SELECT CONVERT(FLOAT,PARAM_VALUE) FROM [$(JUMIA_BI_CONFIG)].dbo.CFG_PARAMETERS WHERE PARAM_KEY = 'CPS_CANCELLATION_RATE');
-DECLARE @CPS_CANCELLATION_ITEMS  INT        = (SELECT CONVERT(INT,PARAM_VALUE) FROM [$(JUMIA_BI_CONFIG)].dbo.CFG_PARAMETERS WHERE PARAM_KEY = 'CPS_CANCELLATION_ITEMS');
-DECLARE @CPS_CANCELLATION_ORDERS        INT = (SELECT CONVERT(INT,PARAM_VALUE) FROM [$(JUMIA_BI_CONFIG)].dbo.CFG_PARAMETERS WHERE PARAM_KEY = 'CPS_CANCELLATION_ORDERS');
-DECLARE @CPS_CANCELLATION_RATE_JFORCE FLOAT = (SELECT CONVERT(FLOAT,PARAM_VALUE) FROM [$(JUMIA_BI_CONFIG)].dbo.CFG_PARAMETERS WHERE PARAM_KEY = 'CPS_CANCELLATION_RATE_JFORCE');
-DECLARE @CPS_CANCELLATION_ORDERS_JFORCE INT = (SELECT CONVERT(INT,PARAM_VALUE) FROM [$(JUMIA_BI_CONFIG)].dbo.CFG_PARAMETERS WHERE PARAM_KEY = 'CPS_CANCELLATION_ORDERS_JFORCE');
-DECLARE @CPS_CANCELLATION_ITEMS_JFORCE  INT = (SELECT CONVERT(INT,PARAM_VALUE) FROM [$(JUMIA_BI_CONFIG)].dbo.CFG_PARAMETERS WHERE PARAM_KEY = 'CPS_CANCELLATION_ITEMS_JFORCE');
+DECLARE @CPS_CANCELLATION_RATE FLOAT        = (SELECT CONVERT(FLOAT,PARAM_VALUE) FROM [JUMIA_CFG].dbo.CFG_PARAMETERS WHERE PARAM_KEY = 'CPS_CANCELLATION_RATE');
+DECLARE @CPS_CANCELLATION_ITEMS  INT        = (SELECT CONVERT(INT,PARAM_VALUE) FROM [JUMIA_CFG].dbo.CFG_PARAMETERS WHERE PARAM_KEY = 'CPS_CANCELLATION_ITEMS');
+DECLARE @CPS_CANCELLATION_ORDERS        INT = (SELECT CONVERT(INT,PARAM_VALUE) FROM [JUMIA_CFG].dbo.CFG_PARAMETERS WHERE PARAM_KEY = 'CPS_CANCELLATION_ORDERS');
+DECLARE @CPS_CANCELLATION_RATE_JFORCE FLOAT = (SELECT CONVERT(FLOAT,PARAM_VALUE) FROM [JUMIA_CFG].dbo.CFG_PARAMETERS WHERE PARAM_KEY = 'CPS_CANCELLATION_RATE_JFORCE');
+DECLARE @CPS_CANCELLATION_ORDERS_JFORCE INT = (SELECT CONVERT(INT,PARAM_VALUE) FROM [JUMIA_CFG].dbo.CFG_PARAMETERS WHERE PARAM_KEY = 'CPS_CANCELLATION_ORDERS_JFORCE');
+DECLARE @CPS_CANCELLATION_ITEMS_JFORCE  INT = (SELECT CONVERT(INT,PARAM_VALUE) FROM [JUMIA_CFG].dbo.CFG_PARAMETERS WHERE PARAM_KEY = 'CPS_CANCELLATION_ITEMS_JFORCE');
 
  
 SET @Last3m_start = CONVERT(INT, CONVERT(VARCHAR(10), CAST(DATEADD(month, -3, getdate()) AS DATE), 112)) 
@@ -294,7 +294,7 @@ ISNULL(ISNULL(TRY_CONVERT(FLOAT, nr_delivered_items), 0) * 1.0 / NULLIF(ISNULL(T
  
  
 /* FLG_RMA_abuse - customers will be blacklisted if they had abused RMA. and then they will not be eligible for whitelisting */
-CREATE TABLE #rma_abuse (sk_customer BIGINT, didnt_return_in_time BIT)
+--CREATE TABLE #rma_abuse (sk_customer BIGINT, didnt_return_in_time BIT)
 -- PTBI-5485: DEPRECATION OF RMA_ABUSE (WE'LL KEEP IT THIS WAYS BECAUSE IT WILL RETURN WITH A DIFFERENT FORMAT)
 --insert into #rma_abuse
 --select sk_customer, didnt_return_in_time from v_rma_classification_for_cps where classification='OFF'
@@ -320,8 +320,8 @@ INNER JOIN (
 					AND CPSI.SK_DATE=LAST_DATE.SK_DATE
 					AND CPSI.DD_DIMENSION=LAST_DATE.DD_DIMENSION
 WHERE MTR_VALUE='OFF'
-UNION 
-SELECT sk_customer FROM #rma_abuse
+--UNION 
+--SELECT sk_customer FROM #rma_abuse
  
    
  
@@ -600,19 +600,19 @@ SELECT b.sk_customer
 ) b
 LEFT JOIN #whitelist wl ON b.SK_CUSTOMER = wl.SK_CUSTOMER
 LEFT JOIN #last3m_blacklist_customers last3m on b.sk_customer = last3m.sk_customer
-FULL JOIN #rma_abuse rmaab on b.sk_customer = rmaab.sk_customer   
+--FULL JOIN #rma_abuse rmaab on b.sk_customer = rmaab.sk_customer   
 WHERE cod_cas IS NOT NULL
 AND b.sk_customer IN
   (
 	  SELECT DISTINCT sk_customer FROM FCT_SALES_ORDER_ITEM_MARKETING WITH (NOLOCK)
-   UNION 
-	  SELECT sk_customer FROM #rma_abuse
+   --UNION 
+	  --SELECT sk_customer FROM #rma_abuse
    )
 -- FILTER HERE
 AND CASE WHEN B.succ_rate < @Success_Rate_threshhold AND B.nr_shipped_orders > @Nr_shipped_orders_threshhold AND wl.SK_CUSTOMER IS NULL THEN 1 
 		 WHEN B.succ_rate < @Success_Rate_threshhold2 AND B.nr_shipped_orders > @Nr_shipped_orders_threshhold2 AND wl.SK_CUSTOMER IS NULL AND @Country IN ('DZ') THEN 1 -- PTBI-8230
 		 WHEN last3m.sk_customer is not null AND wl.SK_CUSTOMER IS NULL THEN 1 
-		 WHEN rmaab.sk_customer is not null THEN 1	
+		 --WHEN rmaab.sk_customer is not null THEN 1	
 		 ELSE 0 END = 1
 
 
@@ -928,9 +928,9 @@ FROM(
  
 	SELECT SK_CUSTOMER FROM #blacklisted_phonenumber_customeraccounts
  
-	UNION 
+	--UNION 
  
-	SELECT SK_CUSTOMER FROM #rma_abuse
+	--SELECT SK_CUSTOMER FROM #rma_abuse
    
 	UNION
 
@@ -948,21 +948,14 @@ FROM(
 SELECT b.sk_customer,
        CONVERT(NVARCHAR(32), 
 	   CASE
-           WHEN succ_rate < @Success_Rate_threshhold /* when less than half of shipped items are delivered */
-                AND nr_shipped_orders > @Nr_shipped_orders_threshhold
-                -- AND isnull(dsc_account_type, '') <> 'jforce' --: Removed on 20180105 due to ticket nr 2550
-                AND wl.SK_CUSTOMER IS NULL THEN 'OFF' /* whitelist customers */
-				-- remove jorce - PTBI-5436
-			/*Below, new condition based on PTBI-8230*/
-		   WHEN succ_rate < @Success_Rate_threshhold2 
-                AND nr_shipped_orders > @Nr_shipped_orders_threshhold2 		  
-				AND wl.SK_CUSTOMER IS NULL 
-				AND @Country IN ('DZ') THEN 'OFF' 
+		   WHEN OVERRIDEN.SK_Customer IS NOT NULL AND OVERRIDEN.MTR_VALUE = 'ON' THEN 'ON'
+		   WHEN OVERRIDEN.SK_Customer IS NOT NULL AND OVERRIDEN.MTR_VALUE = 'OFF' AND wl.sk_customer IS NULL THEN 'OFF'
            WHEN badphone.SK_CUSTOMER IS NOT NULL AND wl.SK_CUSTOMER is null AND isnull(dsc_account_type,'') <> 'jforce' THEN 'OFF'  /* customer accounts can be blacklisted also if they have less than 6 shipped orders, in case they share phone number with a blacklisted customer account. Once they have more than 5 shipped orders, they begin to be considered on their own merits */
 		   WHEN last3m.sk_customer IS NOT NULL AND wl.SK_CUSTOMER IS NULL THEN 'OFF' /* customer accounts will be blocked if have cps bad behaviour on last 3 months */
-		   WHEN rmaab.sk_customer is not null THEN 'OFF'	/*abuse of RMA*/
+		   --WHEN rmaab.sk_customer is not null THEN 'OFF'	/*abuse of RMA*/
 		   WHEN canc.sk_customer IS NOT NULL AND wl.sk_customer IS NULL THEN 'OFF'
 		   WHEN bademail.SK_CUSTOMER IS NOT NULL AND wl.SK_CUSTOMER is null  THEN 'OFF'
+		   WHEN CB.sk_customer IS NOT NULL AND wl.SK_CUSTOMER is null  THEN 'OFF'
 	   ELSE 
 			'ON' 
        END) AS POSTPAYMENT,
@@ -981,6 +974,10 @@ SELECT b.sk_customer,
            WHEN bademail.SK_CUSTOMER IS NOT NULL THEN 1
            ELSE 0
        END AS FLG_EMAIL_BLACKLIST,
+	   CASE
+	   WHEN OVERRIDEN.SK_Customer IS NOT NULL THEN 1
+	   ELSE 0
+       END AS FLG_OVERRIDED_VALUE,
  	
 	   CONVERT(NVARCHAR(32),
 	    CASE WHEN @Country in ('NG','EG','KE') THEN
@@ -1015,17 +1012,11 @@ SELECT b.sk_customer,
 		  ELSE NULL END)	
 				AS GLOBAL_POSTPAYMENT_PRIVILEGE			-- currently only activated for NG,EG,KE
 				    
-		,CASE WHEN rmaab.sk_customer IS NOT NULL THEN 1 ELSE 0 END AS FLG_RMA_abuse 		/*abuse of RMA*/
+		,NULL AS FLG_RMA_abuse 		/*abuse of RMA*/
 		,CASE WHEN canc.sk_customer IS NOT NULL THEN 1 
 			  ELSE 0 
 	     END AS FLG_CANCELLATION_BLACKLIST
-		,CASE WHEN succ_rate < @Success_Rate_threshhold
-		       AND nr_shipped_orders > @Nr_shipped_orders_threshhold THEN 1 
-	          WHEN succ_rate < @Success_Rate_threshhold2
-			   AND nr_shipped_orders > @Nr_shipped_orders_threshhold2  
-			   AND @Country IN ('DZ') THEN 1 
-		      ELSE 0 
-		 END AS FLG_SR_BLACKLIST
+		,NULL AS FLG_SR_BLACKLIST
 		,CASE WHEN last3m.sk_customer IS NOT NULL THEN 1 
 			  ELSE 0 
 	     END AS FLG_LAST_3M_PERF_BLACKLIST
@@ -1183,7 +1174,18 @@ LEFT JOIN #blacklisted_phonenumber_customeraccounts badphone on b.SK_CUSTOMER = 
 LEFT JOIN #blacklisted_email_customeraccounts bademail on b.SK_CUSTOMER = bademail.SK_CUSTOMER
 LEFT JOIN #last3m_blacklist_customers last3m on b.sk_customer = last3m.sk_customer
 LEFT JOIN #cancellation_customers canc on canc.sk_customer=b.sk_customer
-FULL JOIN #rma_abuse rmaab on b.sk_customer = rmaab.sk_customer   
+LEFT JOIN #currently_blacklisted CB on CB.sk_customer=b.sk_customer
+LEFT JOIN (
+	SELECT 
+		TMP_OVR.SK_CUSTOMER,
+		TMP_OVR.MTR_VALUE
+	FROM #TMP_CPS_OVERRIDE TMP_OVR
+	LEFT JOIN DBO.FCT_CPS_INDICATORS CPS ON 
+					CPS.SK_CUSTOMER = TMP_OVR.SK_CUSTOMER
+                                    	AND CPS.DD_DIMENSION = 'POSTPAYMENT'
+					AND CPS.SK_DATE > TMP_OVR.SK_DATE
+	WHERE CPS.SK_CUSTOMER IS NULL AND TMP_OVR.DIMENSION = 'POSTPAYMENT'
+) OVERRIDEN ON OVERRIDEN.SK_CUSTOMER = b.SK_CUSTOMER
 WHERE cod_cas IS NOT NULL
 
  
@@ -1232,10 +1234,7 @@ SELECT FORMAT(date_created,'yyyyMMdd') AS SK_DATE
       ,[DD_COD_CUSTOMER]
       ,[FLG_WHITELIST]
       ,[FLG_PHONE_BLACKLIST]
-		,CASE
-			WHEN bademail.SK_CUSTOMER IS NOT NULL THEN 1
-			ELSE 0
-		END AS FLG_EMAIL_BLACKLIST
+		,[FLG_EMAIL_BLACKLIST]
 	  ,FLG_RMA_abuse
 	  ,u.FLG_CANCELLATION_BLACKLIST
 	  ,u.FLG_SR_BLACKLIST
@@ -1244,7 +1243,7 @@ SELECT FORMAT(date_created,'yyyyMMdd') AS SK_DATE
 	  ,u.MTR_CANCELLATION_ORDER
 	  ,u.MTR_CANCELLATION_ITEM
 	  ,u.MTR_CANCELLATION_RATE
-	  ,0 AS FLG_OVERRIDED_VALUE
+	  ,[FLG_OVERRIDED_VALUE]
 INTO #PRE_FINAL
 FROM #final_insert fi
  --) s
@@ -1453,7 +1452,7 @@ DROP TABLE IF EXISTS #blacklisted_phonenumber_customeraccounts;
 DROP TABLE IF EXISTS #blacklisted_email_customeraccounts;  
 DROP TABLE IF EXISTS #final_insert;  
 DROP TABLE IF EXISTS #global_customers;  
-DROP TABLE IF EXISTS #rma_abuse;  
+--DROP TABLE IF EXISTS #rma_abuse;  
 DROP TABLE IF EXISTS #BLACK_LISTED_CUSTOMERS;
 DROP TABLE IF EXISTS #TBT_JPAY_CUSTOMERS_TO_CONSIDER;
 DROP TABLE IF EXISTS #cancellation_customers;
