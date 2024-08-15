@@ -309,7 +309,7 @@ This query identifies customers to be blacklisted for PostPayment
 /* currently blacklisted customers */ 
 CREATE TABLE #currently_blacklisted (sk_customer BIGINT)
 INSERT INTO #currently_blacklisted
-SELECT CPSI.SK_CUSTOMER
+SELECT CPSI.*
 FROM FCT_CPS_INDICATORS CPSI WITH (NOLOCK)
 INNER JOIN (
 		SELECT SK_CUSTOMER, MAX(SK_DATE)SK_DATE, DD_DIMENSION
@@ -325,8 +325,8 @@ WHERE MTR_VALUE='OFF'
  
    
  
-/* Whitelist. check the last two shipped orders of blacklisted customers. if they get to status Delivered Final, the customer can be taken of the Blacklist.   
-This will also effectively whitelist customers who return majority of items from their orders, as long as at least one item is delivered.   */ 
+/* Whitelist. check the last two orders of customer. if they get to status Delivered /Delivered Final, the customer can be taken of the Blacklist.   
+This will also effectively whitelist customers who return majority of items from their orders, as long as both items are delivered.   */ 
  
 CREATE TABLE #whitelist (sk_customer BIGINT, success_rate FLOAT, nr_delivered_final_orders INT)
   
@@ -945,39 +945,72 @@ FROM(
 ) innerQ
   
 /*** MAIN INSERT STARTS HERE ***/
-SELECT b.sk_customer,
-       CONVERT(NVARCHAR(32), 
-	   CASE
-		   WHEN OVERRIDEN.SK_Customer IS NOT NULL AND OVERRIDEN.MTR_VALUE = 'ON' THEN 'ON'
-		   WHEN OVERRIDEN.SK_Customer IS NOT NULL AND OVERRIDEN.MTR_VALUE = 'OFF' AND wl.sk_customer IS NULL THEN 'OFF'
-           WHEN badphone.SK_CUSTOMER IS NOT NULL AND wl.SK_CUSTOMER is null AND isnull(dsc_account_type,'') <> 'jforce' THEN 'OFF'  /* customer accounts can be blacklisted also if they have less than 6 shipped orders, in case they share phone number with a blacklisted customer account. Once they have more than 5 shipped orders, they begin to be considered on their own merits */
-		   WHEN last3m.sk_customer IS NOT NULL AND wl.SK_CUSTOMER IS NULL THEN 'OFF' /* customer accounts will be blocked if have cps bad behaviour on last 3 months */
-		   --WHEN rmaab.sk_customer is not null THEN 'OFF'	/*abuse of RMA*/
-		   WHEN canc.sk_customer IS NOT NULL AND wl.sk_customer IS NULL THEN 'OFF'
-		   WHEN bademail.SK_CUSTOMER IS NOT NULL AND wl.SK_CUSTOMER is null  THEN 'OFF'
-		   WHEN CB.sk_customer IS NOT NULL AND wl.SK_CUSTOMER is null  THEN 'OFF'
-	   ELSE 
-			'ON' 
-       END) AS POSTPAYMENT,
- 
-       CONVERT(date, CONVERT(VARCHAR(8), Getdate(), 112)) AS date_created,
-       dd_cod_customer,
-       CASE
-           WHEN wl.SK_CUSTOMER IS NOT NULL THEN 1
-           ELSE 0
-       END AS FLG_WHITELIST,
-       CASE
-           WHEN badphone.SK_CUSTOMER IS NOT NULL AND isnull(dsc_account_type,'') <> 'jforce' THEN 1
-           ELSE 0
-       END AS FLG_PHONE_BLACKLIST,
-       CASE
-           WHEN bademail.SK_CUSTOMER IS NOT NULL THEN 1
-           ELSE 0
-       END AS FLG_EMAIL_BLACKLIST,
-	   CASE
-	   WHEN OVERRIDEN.SK_Customer IS NOT NULL THEN 1
-	   ELSE 0
-       END AS FLG_OVERRIDED_VALUE,
+SELECT 
+		b.sk_customer,
+		CONVERT(
+			NVARCHAR(32), 
+			CASE
+				WHEN badphone.SK_CUSTOMER IS NOT NULL AND wl.SK_CUSTOMER is null AND isnull(dsc_account_type,'') <> 'jforce' THEN 'OFF'  /* customer accounts can be blacklisted also if they have less than 6 shipped orders, in case they share phone number with a blacklisted customer account. Once they have more than 5 shipped orders, they begin to be considered on their own merits */
+				WHEN last3m.sk_customer IS NOT NULL AND wl.SK_CUSTOMER IS NULL THEN 'OFF' /* customer accounts will be blocked if have cps bad behaviour on last 3 months */
+				--WHEN rmaab.sk_customer is not null THEN 'OFF'	/*abuse of RMA*/
+				WHEN canc.sk_customer IS NOT NULL AND wl.sk_customer IS NULL THEN 'OFF'
+				WHEN bademail.SK_CUSTOMER IS NOT NULL AND wl.SK_CUSTOMER is null  THEN 'OFF'
+				WHEN CB.sk_customer IS NOT NULL AND wl.SK_CUSTOMER is null  THEN 'OFF' -- currenttly blacklisted + not flagged for whitelisting - keep as is
+
+				WHEN OVERRIDEN.SK_Customer IS NOT NULL AND OVERRIDEN.MTR_VALUE = 'OFF' AND wl.sk_customer IS NULL THEN 'OFF' -- overridden to be OFF
+				WHEN OVERRIDEN.SK_Customer IS NOT NULL AND OVERRIDEN.MTR_VALUE = 'ON' THEN 'ON' -- overrideen to be ON
+			ELSE 
+				'ON' 
+			END
+		) AS POSTPAYMENT,
+	
+		CONVERT(date, CONVERT(VARCHAR(8), Getdate(), 112)) AS date_created,
+		dd_cod_customer,
+       
+		CASE
+			WHEN wl.SK_CUSTOMER IS NOT NULL THEN 1
+			ELSE 0
+		END AS FLG_WHITELIST,
+			
+		CASE
+			WHEN badphone.SK_CUSTOMER IS NOT NULL AND isnull(dsc_account_type,'') <> 'jforce' THEN 1
+			ELSE 0
+		END AS FLG_PHONE_BLACKLIST,
+
+		CASE
+			WHEN bademail.SK_CUSTOMER IS NOT NULL THEN 1
+			ELSE 0
+		END AS FLG_EMAIL_BLACKLIST,
+
+		CASE 
+			WHEN canc.sk_customer IS NOT NULL THEN 1 
+			ELSE 0 
+		END AS FLG_CANCELLATION_BLACKLIST,
+
+		CASE 
+			WHEN last3m.sk_customer IS NOT NULL THEN 1 
+			ELSE 0 
+		END AS FLG_LAST_3M_PERF_BLACKLIST,
+
+		NULL AS FLG_SR_BLACKLIST,
+
+		CASE
+			WHEN 
+				OVERRIDEN.SK_Customer IS NOT NULL 
+				AND OVERRIDEN.MTR_VALUE = 'OFF'
+				AND wl.sk_customer IS NULL
+				AND badphone.SK_CUSTOMER IS NULL
+				AND last3m.sk_customer IS NULL
+				AND canc.sk_customer IS NULL
+				AND bademail.SK_CUSTOMER IS NULL
+				AND CB.sk_customer IS NULL
+				THEN 1
+			WHEN 
+				OVERRIDEN.SK_Customer IS NOT NULL 
+				AND OVERRIDEN.MTR_VALUE = 'ON'
+				THEN 1
+			ELSE 0
+		END AS FLG_OVERRIDED_VALUE,
  	
 	   CONVERT(NVARCHAR(32),
 	    CASE WHEN @Country in ('NG','EG','KE') THEN
@@ -1013,13 +1046,6 @@ SELECT b.sk_customer,
 				AS GLOBAL_POSTPAYMENT_PRIVILEGE			-- currently only activated for NG,EG,KE
 				    
 		,NULL AS FLG_RMA_abuse 		/*abuse of RMA*/
-		,CASE WHEN canc.sk_customer IS NOT NULL THEN 1 
-			  ELSE 0 
-	     END AS FLG_CANCELLATION_BLACKLIST
-		,NULL AS FLG_SR_BLACKLIST
-		,CASE WHEN last3m.sk_customer IS NOT NULL THEN 1 
-			  ELSE 0 
-	     END AS FLG_LAST_3M_PERF_BLACKLIST
 		,succ_rate AS MTR_SUCCESS_RATE
 		,canc.QTD_CANCELLATION_ORDER AS MTR_CANCELLATION_ORDER
 		,canc.QTD_CANCELLATION_ITEM AS MTR_CANCELLATION_ITEM
