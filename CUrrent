@@ -2,8 +2,8 @@ CREATE PROCEDURE [etl].[P_SELLER_SCORE]  (@SK_AUD bigint = -1, @RELOAD_DATE date
 AS
 BEGIN
 
-	DECLARE @SK_DATE_SNAPSHOT int = '20240707' -- FORMAT(GETDATE(),'yyyyMMdd')
-	DECLARE @SK_NEXT_SNAPSHOT int = '20240708' -- FORMAT(DATEADD(DAY,1,GETDATE()),'yyyyMMdd')
+	DECLARE @SK_DATE_SNAPSHOT int = '20240818' -- FORMAT(GETDATE(),'yyyyMMdd')
+	DECLARE @SK_NEXT_SNAPSHOT int = '20240819' -- FORMAT(DATEADD(DAY,1,GETDATE()),'yyyyMMdd')
 	DECLARE @country_code NVARCHAR(2) = DBO.F_GET_COUNTRY_CODE();
         -- parameters
         --DECLARE @keep_snapshots_back INT;	--determines how many days back will the full history be kept 
@@ -45,7 +45,7 @@ BEGIN
 
 		
 		-- JUST RUN IN THIS SITUATION
-        IF  '2024-07-06' -- CAST(DATEADD(DAY, -1, GETDATE()) AS DATE) 
+        IF  '2024-08-17' -- CAST(DATEADD(DAY, -1, GETDATE()) AS DATE) 
 			NOT IN (SELECT ST.DATE FROM #RUNNING_DAYS AS ST)
 			RETURN
 			
@@ -65,7 +65,7 @@ BEGIN
 											   THEN -1
 											   WHEN @back_forward_calculation = 'BACKWARD'
 											   THEN -2
-										   END, '2024-07-07 10:25:55.983') --GETDATE()) 
+										   END, '2024-08-18 10:25:55.983') --GETDATE()) 
 										   AS DATE)
 				  AND DD2.DSC_DAY_WEEK_LONG = 'SUNDAY';				
 
@@ -129,7 +129,7 @@ BEGIN
              TP
              AS (SELECT *
                  FROM TOOLS_PARAMETERS AS TP
-                 WHERE '2024-07-06 10:49:48.920' -- DATEADD(DAY, -1, GETDATE()) 
+                 WHERE '2024-08-17 10:49:48.920' -- DATEADD(DAY, -1, GETDATE()) 
 				 BETWEEN TP.DAT_START_DATE AND TP.DAT_END_DATE)
              SELECT @l7d_cr =
              (
@@ -362,7 +362,7 @@ BEGIN
                   -- GROUP 
                   AND PKPI.COD_GROUP = 'SELLER_SCORE'
         ) AS RKPI
-        WHERE '2024-07-07 10:36:57.747'--GETDATE() 
+        WHERE '2024-08-18 10:36:57.747'--GETDATE() 
 		BETWEEN RKPI.DAT_START_DATE AND RKPI.DAT_END_DATE;
 
 
@@ -503,7 +503,7 @@ CASE WHEN SHIP.DSC_SHIPPING_TYPE_DESCRIPTION <> 'Drop Shipping' AND ISNULL(SOIS.
 		       And DS.DSC_TAX_CLASS = 'international' -- Global Seller...
 			   ) THEN 
 			CASE 
-	            WHEN @DOS_Saturdays = 1 THEN
+	            WHEN @JG_DOS_Saturdays = 1 THEN
 	                CASE 
 			    WHEN BUSINESS_DAYS_1.NR_BUSINESS_DAYS_WEEKEND_1 <= 0 THEN @JG_DOS_0D
 	                    WHEN BUSINESS_DAYS_1.NR_BUSINESS_DAYS_WEEKEND_1 = 1 THEN @JG_DOS_1D
@@ -835,7 +835,7 @@ SELECT
     VDC.QUALITY_RETURN_RATE_AVG_RANK,
     VDC.OVERALL_AVERAGE_CUSTOMER_RATING_AVG_RANK,
 	ISNULL(VDC.SALES_ORDER_VOLUME,0) SALES_ORDER_VOLUME,
-	DATEDIFF(day, DS.DAT_CREATED_AT_BOB, '2024-07-07 10:50:48.480') AS AGE,--DATEDIFF(day, DS.DAT_CREATED_AT_BOB, GETDATE()) AS AGE, 
+	DATEDIFF(day, DS.DAT_CREATED_AT_BOB, '2024-08-18 10:50:48.480') AS AGE,--DATEDIFF(day, DS.DAT_CREATED_AT_BOB, GETDATE()) AS AGE, 
 	VDC.SOI_CANCELLED_15D,
     VDC.SOI_CONFIRMED_15_8_D,
     VDC.SOI_CANCELLED_36D,
