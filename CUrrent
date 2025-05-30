@@ -3,7 +3,7 @@
             ---------------------- ORDERS
             SELECT
                 o.cod_country country,
-                date(dat_gross_time) date,
+                date(parse_datetime(CAST(o.SK_DATE AS VARCHAR), 'yyyyMMdd')) date,
                 o.dsc_platform platform,
                 null service_platform,
                 CASE WHEN LOWER(o.dsc_platform) LIKE 'android' THEN 'android'
@@ -106,12 +106,12 @@
             LEFT JOIN process_pg_bob.pg_bob_sales_order_item BOB ON BOB.cod_sales_order_item = o.cod_order_item AND BOB.cod_country = o.cod_country
 
             WHERE
-                date(dat_gross_time) >= cast(date_add('month',-14,current_date) as date)
+                parse_datetime(CAST(SK_DATE AS VARCHAR), 'yyyyMMdd') >= date_add('month',-14,current_date)
                 AND o.cod_country not in ('TN', 'ZZ', 'ZA')
 
             GROUP BY 
                 o.cod_country,
-                date(dat_gross_time) ,
+                date(parse_datetime(CAST(o.SK_DATE AS VARCHAR), 'yyyyMMdd')) ,
                 o.dsc_platform,
                 CASE WHEN LOWER(o.dsc_platform) LIKE 'android' THEN 'android'
                     WHEN LOWER(o.dsc_platform) LIKE 'ios' THEN 'ios'
@@ -633,7 +633,7 @@
 
             SELECT 
                 o.cod_country as country,
-                date(dat_gross_time) date,
+                date(parse_datetime(CAST(o.SK_DATE AS VARCHAR), 'yyyyMMdd')) date,
                 o.dsc_platform platform,
                 null service_platform,
                 CASE WHEN LOWER(o.dsc_platform) LIKE 'android' THEN 'android'
@@ -695,12 +695,12 @@
                 0 pageviews
 
             FROM process_pg_dwh.pg_dwh_central_marketing_item o
-            WHERE dat_gross_time>= cast(date_add('month',-14,current_date) as date)
+            WHERE parse_datetime(CAST(o.SK_DATE AS VARCHAR), 'yyyyMMdd') >= date_add('month',-14,current_date)
             and o.cod_country not in ('TN', 'ZZ', 'ZA') 
 
             group BY
             o.cod_country,
-            date(dat_gross_time),
+            date(parse_datetime(CAST(o.SK_DATE AS VARCHAR), 'yyyyMMdd')),
                 o.dsc_platform,
                 CASE WHEN LOWER(o.dsc_platform) LIKE 'android' THEN 'android'
                         WHEN LOWER(o.dsc_platform) LIKE 'ios' THEN 'ios'
