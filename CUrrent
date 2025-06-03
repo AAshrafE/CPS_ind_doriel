@@ -1,3 +1,23 @@
+WITH new_customer_flags AS (
+    SELECT 
+        o.cod_customer,
+        o.cod_country,
+        date(parse_datetime(CAST(o.SK_DATE AS VARCHAR), 'yyyyMMdd')) as order_date,
+        ROW_NUMBER() OVER (PARTITION BY o.cod_customer, o.cod_country ORDER BY parse_datetime(CAST(o.SK_DATE AS VARCHAR), 'yyyyMMdd')) as rn,
+        fco.dat_first_order_gross
+    FROM process_pg_dwh.pg_dwh_central_marketing_item o
+    LEFT JOIN (
+        SELECT 
+            dat_first_order_gross,
+            cod_customer,
+            cod_country
+        FROM process_central_fin_dwh.central_fin_dwh_ecommerce_customer
+        WHERE flg_fo_gross_country = TRUE 
+    ) fco 
+    ON o.cod_customer = fco.cod_customer 
+    AND o.cod_country = fco.cod_country
+)
+
 SELECT
     o.cod_country country,
     date(parse_datetime(CAST(o.SK_DATE AS VARCHAR), 'yyyyMMdd')) date,
@@ -18,6 +38,13 @@ SELECT
     
     null AS brand,
     c.dsc_channel_type as channel_type,
+    
+    CASE 
+        WHEN date(parse_datetime(CAST(o.SK_DATE AS VARCHAR), 'yyyyMMdd')) = date(ncf.dat_first_order_gross)
+            AND ncf.rn = 1
+        THEN true
+        ELSE false
+    END AS flg_new_customer,
     
     count(distinct case when mtr_gross_items > 0 then cod_order else null end) as valid,
     count(distinct case when mtr_net > 0 then cod_order else null end) as net,
@@ -62,6 +89,10 @@ SELECT
     0 pageviews
 
 FROM process_pg_dwh.pg_dwh_central_marketing_item o
+LEFT JOIN new_customer_flags ncf 
+    ON o.cod_customer = ncf.cod_customer 
+    AND o.cod_country = ncf.cod_country 
+    AND date(parse_datetime(CAST(o.SK_DATE AS VARCHAR), 'yyyyMMdd')) = ncf.order_date
 LEFT JOIN
     (SELECT DISTINCT dsc_channel_one, dsc_channel_two, dsc_channel_three, dsc_channel_four, dsc_channel_five, dsc_channel_type
     ,row_number() OVER ( PARTITION BY dsc_channel_one, dsc_channel_two, dsc_channel_three, dsc_channel_four, dsc_channel_five ORDER BY sk_channel ) AS RN 
@@ -92,13 +123,13 @@ LEFT JOIN (
         1 =1
         AND T.dat_created_at >= cast(date_add('month',-14,current_date) as date)
         AND T.cod_transaction_type IN (
-                            1, -- 'Commission'
-                            2, --'Commission Credit' 
-                            42, -- 'Commission Rebate Credit'
-                            50, -- 'Commission Rebate'
-                            116, --'Commission - Postal'
-                            136 -- 'Commission Credit - Postal'
-                            )
+                                    1, -- 'Commission'
+                                    2, --'Commission Credit' 
+                                    42, -- 'Commission Rebate Credit'
+                                    50, -- 'Commission Rebate'
+                                    116, --'Commission - Postal'
+                                    136 -- 'Commission Credit - Postal'
+                                    )
     GROUP by
         T.dsc_order_number,
         SOI.cod_bob_sales_order_item,
