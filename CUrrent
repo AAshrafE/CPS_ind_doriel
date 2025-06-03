@@ -19,13 +19,6 @@ SELECT
     null AS brand,
     c.dsc_channel_type as channel_type,
     
-    CASE 
-        WHEN date(parse_datetime(CAST(o.SK_DATE AS VARCHAR), 'yyyyMMdd')) = date(fco.dat_first_order_gross)
-            AND ROW_NUMBER() OVER (PARTITION BY o.cod_customer, o.cod_country ORDER BY parse_datetime(CAST(o.SK_DATE AS VARCHAR), 'yyyyMMdd')) = 1
-        THEN true
-        ELSE false
-    END AS flg_new_customer,
-    
     count(distinct case when mtr_gross_items > 0 then cod_order else null end) as valid,
     count(distinct case when mtr_net > 0 then cod_order else null end) as net,
     SUM(mtr_gross_items) As valid_items,   
@@ -69,14 +62,6 @@ SELECT
     0 pageviews
 
 FROM process_pg_dwh.pg_dwh_central_marketing_item o
-LEFT JOIN (
-    SELECT 
-        dat_first_order_gross
-        , cod_customer
-        , cod_country
-    FROM process_central_fin_dwh.central_fin_dwh_ecommerce_customer
-    WHERE flg_fo_gross_country = TRUE 
-) fco ON o.cod_customer = fco.cod_customer AND o.cod_country = fco.cod_country
 LEFT JOIN
     (SELECT DISTINCT dsc_channel_one, dsc_channel_two, dsc_channel_three, dsc_channel_four, dsc_channel_five, dsc_channel_type
     ,row_number() OVER ( PARTITION BY dsc_channel_one, dsc_channel_two, dsc_channel_three, dsc_channel_four, dsc_channel_five ORDER BY sk_channel ) AS RN 
@@ -107,13 +92,13 @@ LEFT JOIN (
         1 =1
         AND T.dat_created_at >= cast(date_add('month',-14,current_date) as date)
         AND T.cod_transaction_type IN (
-                                    1, -- 'Commission'
-                                    2, --'Commission Credit' 
-                                    42, -- 'Commission Rebate Credit'
-                                    50, -- 'Commission Rebate'
-                                    116, --'Commission - Postal'
-                                    136 -- 'Commission Credit - Postal'
-                                    )
+                            1, -- 'Commission'
+                            2, --'Commission Credit' 
+                            42, -- 'Commission Rebate Credit'
+                            50, -- 'Commission Rebate'
+                            116, --'Commission - Postal'
+                            136 -- 'Commission Credit - Postal'
+                            )
     GROUP by
         T.dsc_order_number,
         SOI.cod_bob_sales_order_item,
@@ -140,10 +125,4 @@ GROUP BY
     coalesce(case when o.dsc_channel_one = 'Sales Consultants' or o.dsc_channel_one = 'Corporate Consultants' or o.dsc_channel_one = 'Telesales Consultants' then o.dsc_channel_three else d.dsc_channel_three end, o.dsc_channel_three) ,
     coalesce(case when o.dsc_channel_one = 'Sales Consultants' or o.dsc_channel_one = 'Corporate Consultants' or o.dsc_channel_one = 'Telesales Consultants' then o.dsc_channel_four else d.dsc_channel_four end, o.dsc_channel_four) ,
     coalesce(case when o.dsc_channel_one = 'Sales Consultants' or o.dsc_channel_one = 'Corporate Consultants' or o.dsc_channel_one = 'Telesales Consultants' then o.dsc_channel_five else d.dsc_channel_five end, o.dsc_channel_five) ,
-    c.dsc_channel_type,
-    CASE 
-        WHEN date(parse_datetime(CAST(o.SK_DATE AS VARCHAR), 'yyyyMMdd')) = date(fco.dat_first_order_gross)
-            AND ROW_NUMBER() OVER (PARTITION BY o.cod_customer, o.cod_country ORDER BY parse_datetime(CAST(o.SK_DATE AS VARCHAR), 'yyyyMMdd')) = 1
-        THEN true
-        ELSE false
-    END
+    c.dsc_channel_type
