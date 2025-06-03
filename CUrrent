@@ -1,128 +1,149 @@
 SELECT
-                o.cod_country country,
-                date(parse_datetime(CAST(o.SK_DATE AS VARCHAR), 'yyyyMMdd')) date,
-                o.dsc_platform platform,
-                null service_platform,
-                CASE WHEN LOWER(o.dsc_platform) LIKE 'android' THEN 'android'
-                    WHEN LOWER(o.dsc_platform) LIKE 'ios' THEN 'ios'
-                    WHEN LOWER(o.dsc_platform) LIKE 'android_app' THEN 'android'
-                    WHEN LOWER(o.dsc_platform) LIKE 'ios_app' THEN 'ios'
-                    WHEN LOWER(o.dsc_platform) LIKE '%app%' THEN 'android'
-                ELSE 'web' END AS device,
-                
-                coalesce(case when o.dsc_channel_one = 'Sales Consultants' or o.dsc_channel_one = 'Corporate Consultants' or o.dsc_channel_one = 'Telesales Consultants' then o.dsc_channel_one else d.dsc_channel_one end, o.dsc_channel_one) channel_1,
-                coalesce(case when o.dsc_channel_one = 'Sales Consultants' or o.dsc_channel_one = 'Corporate Consultants' or o.dsc_channel_one = 'Telesales Consultants' then o.dsc_channel_two else d.dsc_channel_two end, o.dsc_channel_two) channel_2,
-                coalesce(case when o.dsc_channel_one = 'Sales Consultants' or o.dsc_channel_one = 'Corporate Consultants' or o.dsc_channel_one = 'Telesales Consultants' then o.dsc_channel_three else d.dsc_channel_three end, o.dsc_channel_three) channel_3,
-                coalesce(case when o.dsc_channel_one = 'Sales Consultants' or o.dsc_channel_one = 'Corporate Consultants' or o.dsc_channel_one = 'Telesales Consultants' then o.dsc_channel_four else d.dsc_channel_four end, o.dsc_channel_four) channel_4,
-                coalesce(case when o.dsc_channel_one = 'Sales Consultants' or o.dsc_channel_one = 'Corporate Consultants' or o.dsc_channel_one = 'Telesales Consultants' then o.dsc_channel_five else d.dsc_channel_five end, o.dsc_channel_five) channel_5,
-                
-                null AS brand,
-                c.dsc_channel_type as channel_type,
-                
-                count(distinct case when mtr_gross_items > 0 then cod_order else null end) as valid,
-                count(distinct case when mtr_net > 0 then cod_order else null end) as net,
-                SUM(mtr_gross_items) As valid_items,   
-                SUM(mtr_net) as net_items,
-                SUM(mtr_gmv_incl_tax_usd) as gmv_inc_vat,
-                SUM(mtr_net_merchandise_value_usd) as nmv_exc_vat,
-                SUM(mtr_vat_usd) valid_vat_usd,
-                SUM(case when mtr_net > 0 then mtr_vat_usd else 0 END) AS net_vat_usd,
-                SUM(mtr_shipping_fee_usd) AS valid_shipping_fee_usd,
-                SUM(case when mtr_net>0 then mtr_shipping_fee_usd else 0 end) AS net_shipping_fee_usd,
-                SUM(mtr_voucher_usd) as valid_voucher_usd,
-                SUM(case when mtr_net>0 then mtr_voucher_usd else 0 end) as	net_voucher_usd, 
-                0 visits,
-                0 costs,
-                --
-                SUM(mtr_voucher_usd) AS valid_costs_voucher_usd,
-                SUM(case when mtr_net>0 then mtr_voucher_usd else 0 end) as net_costs_voucher_usd,
-                sum(mtr_usd_cart_rule_value_gross) as valid_costs_cpr_usd,
-                SUM(case when mtr_net>0 then mtr_usd_cart_rule_value_gross else 0 end) as net_costs_cpr_usd,
-                SUM(CASE WHEN flg_is_marketplace = 1 THEN R.Commission ELSE NULL END) AS MPL_Margin,
-                SUM(CASE WHEN flg_is_marketplace <> 1 AND mtr_net <> 0 THEN GREATEST(o.mtr_selling_price_incl_tax - BOB.mtr_tax_amount - o.mtr_supplier_cost_excl_tax,0) ELSE NULL END ) AS RTL_Margin,
-                    --
-                0 targets_visits,
-                0 targets_costs,
-                0 targets_nmv,
-                0 targets_net_orders,
-                0 targets_gmv,
-                0 targets_installs,
-                0 targets_dau,
-                0 targets_mau,
-                0 targets_pv,
-                0 as targets_valid_orders,
-                0 as targets_net_items,
-                0 AS targets_pom_budget,
-                --
-                0 dau,
-                0 mau,
-                0 installs,
-                0 clicks,
-                0 uninstalls,
-                0 pageviews
+    o.cod_country country,
+    date(parse_datetime(CAST(o.SK_DATE AS VARCHAR), 'yyyyMMdd')) date,
+    o.dsc_platform platform,
+    null service_platform,
+    CASE WHEN LOWER(o.dsc_platform) LIKE 'android' THEN 'android'
+        WHEN LOWER(o.dsc_platform) LIKE 'ios' THEN 'ios'
+        WHEN LOWER(o.dsc_platform) LIKE 'android_app' THEN 'android'
+        WHEN LOWER(o.dsc_platform) LIKE 'ios_app' THEN 'ios'
+        WHEN LOWER(o.dsc_platform) LIKE '%app%' THEN 'android'
+    ELSE 'web' END AS device,
+    
+    coalesce(case when o.dsc_channel_one = 'Sales Consultants' or o.dsc_channel_one = 'Corporate Consultants' or o.dsc_channel_one = 'Telesales Consultants' then o.dsc_channel_one else d.dsc_channel_one end, o.dsc_channel_one) channel_1,
+    coalesce(case when o.dsc_channel_one = 'Sales Consultants' or o.dsc_channel_one = 'Corporate Consultants' or o.dsc_channel_one = 'Telesales Consultants' then o.dsc_channel_two else d.dsc_channel_two end, o.dsc_channel_two) channel_2,
+    coalesce(case when o.dsc_channel_one = 'Sales Consultants' or o.dsc_channel_one = 'Corporate Consultants' or o.dsc_channel_one = 'Telesales Consultants' then o.dsc_channel_three else d.dsc_channel_three end, o.dsc_channel_three) channel_3,
+    coalesce(case when o.dsc_channel_one = 'Sales Consultants' or o.dsc_channel_one = 'Corporate Consultants' or o.dsc_channel_one = 'Telesales Consultants' then o.dsc_channel_four else d.dsc_channel_four end, o.dsc_channel_four) channel_4,
+    coalesce(case when o.dsc_channel_one = 'Sales Consultants' or o.dsc_channel_one = 'Corporate Consultants' or o.dsc_channel_one = 'Telesales Consultants' then o.dsc_channel_five else d.dsc_channel_five end, o.dsc_channel_five) channel_5,
+    
+    null AS brand,
+    c.dsc_channel_type as channel_type,
+    
+    CASE 
+        WHEN date(parse_datetime(CAST(o.SK_DATE AS VARCHAR), 'yyyyMMdd')) = date(fco.dat_first_order_gross)
+            AND ROW_NUMBER() OVER (PARTITION BY o.cod_customer, o.cod_country ORDER BY parse_datetime(CAST(o.SK_DATE AS VARCHAR), 'yyyyMMdd')) = 1
+        THEN true
+        ELSE false
+    END AS flg_new_customer,
+    
+    count(distinct case when mtr_gross_items > 0 then cod_order else null end) as valid,
+    count(distinct case when mtr_net > 0 then cod_order else null end) as net,
+    SUM(mtr_gross_items) As valid_items,   
+    SUM(mtr_net) as net_items,
+    SUM(mtr_gmv_incl_tax_usd) as gmv_inc_vat,
+    SUM(mtr_net_merchandise_value_usd) as nmv_exc_vat,
+    SUM(mtr_vat_usd) valid_vat_usd,
+    SUM(case when mtr_net > 0 then mtr_vat_usd else 0 END) AS net_vat_usd,
+    SUM(mtr_shipping_fee_usd) AS valid_shipping_fee_usd,
+    SUM(case when mtr_net>0 then mtr_shipping_fee_usd else 0 end) AS net_shipping_fee_usd,
+    SUM(mtr_voucher_usd) as valid_voucher_usd,
+    SUM(case when mtr_net>0 then mtr_voucher_usd else 0 end) as	net_voucher_usd, 
+    0 visits,
+    0 costs,
+    --
+    SUM(mtr_voucher_usd) AS valid_costs_voucher_usd,
+    SUM(case when mtr_net>0 then mtr_voucher_usd else 0 end) as net_costs_voucher_usd,
+    sum(mtr_usd_cart_rule_value_gross) as valid_costs_cpr_usd,
+    SUM(case when mtr_net>0 then mtr_usd_cart_rule_value_gross else 0 end) as net_costs_cpr_usd,
+    SUM(CASE WHEN flg_is_marketplace = 1 THEN R.Commission ELSE NULL END) AS MPL_Margin,
+    SUM(CASE WHEN flg_is_marketplace <> 1 AND mtr_net <> 0 THEN GREATEST(o.mtr_selling_price_incl_tax - BOB.mtr_tax_amount - o.mtr_supplier_cost_excl_tax,0) ELSE NULL END ) AS RTL_Margin,
+        --
+    0 targets_visits,
+    0 targets_costs,
+    0 targets_nmv,
+    0 targets_net_orders,
+    0 targets_gmv,
+    0 targets_installs,
+    0 targets_dau,
+    0 targets_mau,
+    0 targets_pv,
+    0 as targets_valid_orders,
+    0 as targets_net_items,
+    0 AS targets_pom_budget,
+    --
+    0 dau,
+    0 mau,
+    0 installs,
+    0 clicks,
+    0 uninstalls,
+    0 pageviews
 
-            FROM process_pg_dwh.pg_dwh_central_marketing_item o
-            LEFT JOIN
-                (SELECT DISTINCT dsc_channel_one, dsc_channel_two, dsc_channel_three, dsc_channel_four, dsc_channel_five, dsc_channel_type
-                ,row_number() OVER ( PARTITION BY dsc_channel_one, dsc_channel_two, dsc_channel_three, dsc_channel_four, dsc_channel_five ORDER BY sk_channel ) AS RN 
-                from consume_central_online_marketing.central_online_marketing_dim_channels
-                ) c 
-                    ON C.RN = 1
-                        and o.dsc_channel_one = c.dsc_channel_one
-                        AND o.dsc_channel_two = c.dsc_channel_two
-                        AND o.dsc_channel_three = c.dsc_channel_three
-                        AND o.dsc_channel_four = c.dsc_channel_four
-                        AND o.dsc_channel_five = c.dsc_channel_five
+FROM process_pg_dwh.pg_dwh_central_marketing_item o
+LEFT JOIN (
+    SELECT 
+        dat_first_order_gross
+        , cod_customer
+        , cod_country
+    FROM process_central_fin_dwh.central_fin_dwh_ecommerce_customer
+    WHERE flg_fo_gross_country = TRUE 
+) fco ON o.cod_customer = fco.cod_customer AND o.cod_country = fco.cod_country
+LEFT JOIN
+    (SELECT DISTINCT dsc_channel_one, dsc_channel_two, dsc_channel_three, dsc_channel_four, dsc_channel_five, dsc_channel_type
+    ,row_number() OVER ( PARTITION BY dsc_channel_one, dsc_channel_two, dsc_channel_three, dsc_channel_four, dsc_channel_five ORDER BY sk_channel ) AS RN 
+    from consume_central_online_marketing.central_online_marketing_dim_channels
+    ) c 
+        ON C.RN = 1
+            and o.dsc_channel_one = c.dsc_channel_one
+            AND o.dsc_channel_two = c.dsc_channel_two
+            AND o.dsc_channel_three = c.dsc_channel_three
+            AND o.dsc_channel_four = c.dsc_channel_four
+            AND o.dsc_channel_five = c.dsc_channel_five
 
-            LEFT JOIN
-                (SELECT DISTINCT dsc_channel_one, dsc_channel_two, dsc_channel_three, dsc_channel_four, dsc_channel_five, cod_transaction as cod_order_nr, cod_country, dsc_interface from process_central_orders_channel_mapping.pg_orders_channels ) d 
-                    ON o.cod_order_nr = d.cod_order_nr
-                        AND o.cod_country = d.cod_country
-                        AND o.dsc_platform = d.dsc_interface
+LEFT JOIN
+    (SELECT DISTINCT dsc_channel_one, dsc_channel_two, dsc_channel_three, dsc_channel_four, dsc_channel_five, cod_transaction as cod_order_nr, cod_country, dsc_interface from process_central_orders_channel_mapping.pg_orders_channels ) d 
+        ON o.cod_order_nr = d.cod_order_nr
+            AND o.cod_country = d.cod_country
+            AND o.dsc_platform = d.dsc_interface
 
-            LEFT JOIN (
-                SELECT 
-                    SOI.cod_bob_sales_order_item,
-                    S.cod_country,
-                    SUM(mtr_amount) AS Commission
-                FROM process_central_ring.central_ring_transaction T
-                JOIN process_central_ring.central_ring_shop S ON T.cod_shop = S.cod_shop
-                JOIN process_pg_oms.pg_oms_sales_order_item SOI ON T.cod_oms_sales_order_item = SOI.cod_sales_order_item AND S.cod_country = SOI.cod_country
-                WHERE 
-                    1 =1
-                    AND T.dat_created_at >= cast(date_add('month',-14,current_date) as date)
-                    AND T.cod_transaction_type IN (
-                                        1, -- 'Commission'
-                                        2, --'Commission Credit' 
-                                        42, -- 'Commission Rebate Credit'
-                                        50, -- 'Commission Rebate'
-                                        116, --'Commission - Postal'
-                                        136 -- 'Commission Credit - Postal'
-                                        )
-                GROUP by
-                    T.dsc_order_number,
-                    SOI.cod_bob_sales_order_item,
-                    S.cod_country
-            ) AS R ON R.cod_bob_sales_order_item = o.cod_order_item AND R.cod_country = o.cod_country
-            LEFT JOIN process_pg_bob.pg_bob_sales_order_item BOB ON BOB.cod_sales_order_item = o.cod_order_item AND BOB.cod_country = o.cod_country
+LEFT JOIN (
+    SELECT 
+        SOI.cod_bob_sales_order_item,
+        S.cod_country,
+        SUM(mtr_amount) AS Commission
+    FROM process_central_ring.central_ring_transaction T
+    JOIN process_central_ring.central_ring_shop S ON T.cod_shop = S.cod_shop
+    JOIN process_pg_oms.pg_oms_sales_order_item SOI ON T.cod_oms_sales_order_item = SOI.cod_sales_order_item AND S.cod_country = SOI.cod_country
+    WHERE 
+        1 =1
+        AND T.dat_created_at >= cast(date_add('month',-14,current_date) as date)
+        AND T.cod_transaction_type IN (
+                                    1, -- 'Commission'
+                                    2, --'Commission Credit' 
+                                    42, -- 'Commission Rebate Credit'
+                                    50, -- 'Commission Rebate'
+                                    116, --'Commission - Postal'
+                                    136 -- 'Commission Credit - Postal'
+                                    )
+    GROUP by
+        T.dsc_order_number,
+        SOI.cod_bob_sales_order_item,
+        S.cod_country
+) AS R ON R.cod_bob_sales_order_item = o.cod_order_item AND R.cod_country = o.cod_country
+LEFT JOIN process_pg_bob.pg_bob_sales_order_item BOB ON BOB.cod_sales_order_item = o.cod_order_item AND BOB.cod_country = o.cod_country
 
-            WHERE
-                parse_datetime(CAST(SK_DATE AS VARCHAR), 'yyyyMMdd') >= date_add('month',-14,current_date)
-                AND o.cod_country not in ('TN', 'ZZ', 'ZA')
+WHERE
+    parse_datetime(CAST(SK_DATE AS VARCHAR), 'yyyyMMdd') >= date_add('month',-14,current_date)
+    AND o.cod_country not in ('TN', 'ZZ', 'ZA')
 
-            GROUP BY 
-                o.cod_country,
-                date(parse_datetime(CAST(o.SK_DATE AS VARCHAR), 'yyyyMMdd')) ,
-                o.dsc_platform,
-                CASE WHEN LOWER(o.dsc_platform) LIKE 'android' THEN 'android'
-                    WHEN LOWER(o.dsc_platform) LIKE 'ios' THEN 'ios'
-                    WHEN LOWER(o.dsc_platform) LIKE 'android_app' THEN 'android'
-                    WHEN LOWER(o.dsc_platform) LIKE 'ios_app' THEN 'ios'
-                    WHEN LOWER(o.dsc_platform) LIKE '%app%' THEN 'android'
-                ELSE 'web' END ,
-                coalesce(case when o.dsc_channel_one = 'Sales Consultants' or o.dsc_channel_one = 'Corporate Consultants' or o.dsc_channel_one = 'Telesales Consultants' then o.dsc_channel_one else d.dsc_channel_one end, o.dsc_channel_one) ,
-                coalesce(case when o.dsc_channel_one = 'Sales Consultants' or o.dsc_channel_one = 'Corporate Consultants' or o.dsc_channel_one = 'Telesales Consultants' then o.dsc_channel_two else d.dsc_channel_two end, o.dsc_channel_two) ,
-                coalesce(case when o.dsc_channel_one = 'Sales Consultants' or o.dsc_channel_one = 'Corporate Consultants' or o.dsc_channel_one = 'Telesales Consultants' then o.dsc_channel_three else d.dsc_channel_three end, o.dsc_channel_three) ,
-                coalesce(case when o.dsc_channel_one = 'Sales Consultants' or o.dsc_channel_one = 'Corporate Consultants' or o.dsc_channel_one = 'Telesales Consultants' then o.dsc_channel_four else d.dsc_channel_four end, o.dsc_channel_four) ,
-                coalesce(case when o.dsc_channel_one = 'Sales Consultants' or o.dsc_channel_one = 'Corporate Consultants' or o.dsc_channel_one = 'Telesales Consultants' then o.dsc_channel_five else d.dsc_channel_five end, o.dsc_channel_five) ,
-                c.dsc_channel_type
+GROUP BY 
+    o.cod_country,
+    date(parse_datetime(CAST(o.SK_DATE AS VARCHAR), 'yyyyMMdd')) ,
+    o.dsc_platform,
+    CASE WHEN LOWER(o.dsc_platform) LIKE 'android' THEN 'android'
+        WHEN LOWER(o.dsc_platform) LIKE 'ios' THEN 'ios'
+        WHEN LOWER(o.dsc_platform) LIKE 'android_app' THEN 'android'
+        WHEN LOWER(o.dsc_platform) LIKE 'ios_app' THEN 'ios'
+        WHEN LOWER(o.dsc_platform) LIKE '%app%' THEN 'android'
+    ELSE 'web' END ,
+    coalesce(case when o.dsc_channel_one = 'Sales Consultants' or o.dsc_channel_one = 'Corporate Consultants' or o.dsc_channel_one = 'Telesales Consultants' then o.dsc_channel_one else d.dsc_channel_one end, o.dsc_channel_one) ,
+    coalesce(case when o.dsc_channel_one = 'Sales Consultants' or o.dsc_channel_one = 'Corporate Consultants' or o.dsc_channel_one = 'Telesales Consultants' then o.dsc_channel_two else d.dsc_channel_two end, o.dsc_channel_two) ,
+    coalesce(case when o.dsc_channel_one = 'Sales Consultants' or o.dsc_channel_one = 'Corporate Consultants' or o.dsc_channel_one = 'Telesales Consultants' then o.dsc_channel_three else d.dsc_channel_three end, o.dsc_channel_three) ,
+    coalesce(case when o.dsc_channel_one = 'Sales Consultants' or o.dsc_channel_one = 'Corporate Consultants' or o.dsc_channel_one = 'Telesales Consultants' then o.dsc_channel_four else d.dsc_channel_four end, o.dsc_channel_four) ,
+    coalesce(case when o.dsc_channel_one = 'Sales Consultants' or o.dsc_channel_one = 'Corporate Consultants' or o.dsc_channel_one = 'Telesales Consultants' then o.dsc_channel_five else d.dsc_channel_five end, o.dsc_channel_five) ,
+    c.dsc_channel_type,
+    CASE 
+        WHEN date(parse_datetime(CAST(o.SK_DATE AS VARCHAR), 'yyyyMMdd')) = date(fco.dat_first_order_gross)
+            AND ROW_NUMBER() OVER (PARTITION BY o.cod_customer, o.cod_country ORDER BY parse_datetime(CAST(o.SK_DATE AS VARCHAR), 'yyyyMMdd')) = 1
+        THEN true
+        ELSE false
+    END
