@@ -21,7 +21,7 @@
                 
                 null AS brand,
                 c.dsc_channel_type as channel_type,
-                flg_new_customer,
+                CASE WHEN Q.cod_order_nr IS NOT NULL THEN true ELSE false END AS flg_new_customer,
                 
                 count(distinct case when mtr_gross_items > 0 then cod_order else null end) as valid,
                 count(distinct case when mtr_net > 0 then cod_order else null end) as net,
@@ -110,6 +110,20 @@
             ) AS R ON R.cod_bob_sales_order_item = o.cod_order_item AND R.cod_country = o.cod_country
             LEFT JOIN process_pg_bob.pg_bob_sales_order_item BOB ON BOB.cod_sales_order_item = o.cod_order_item AND BOB.cod_country = o.cod_country
 
+            LEFT JOIN(
+                SELECT 
+                    cod_order_nr, 
+                    CASE WHEN C.cod_country = 'IC' THEN 'CI' ELSE C.cod_country END as cod_country, 
+                    C.dat_first_order_gross, 
+                    C.cod_customer
+                FROM "process_central_fin_dwh"."central_fin_dwh_ecommerce_customer" C
+                LEFT JOIN "process_pg_oms"."pg_oms_sales_order" OMS 
+                    ON C.cod_order_gross = OMS.cod_sales_order 
+                    AND CASE WHEN C.cod_country = 'IC' THEN 'CI' ELSE C.cod_country END = OMS.cod_country
+                WHERE flg_fo_gross_country = true
+                ORDER BY dat_first_order_gross DESC
+                ) Q On Q.cod_order_nr = o.cod_order_nr AND Q.cod_country = o.cod_country
+
             WHERE
                 parse_datetime(CAST(SK_DATE AS VARCHAR), 'yyyyMMdd') >= date_add('month',-14,current_date)
                 AND o.cod_country not in ('TN', 'ZZ', 'ZA')
@@ -130,7 +144,7 @@
                 coalesce(case when o.dsc_channel_one = 'Sales Consultants' or o.dsc_channel_one = 'Corporate Consultants' or o.dsc_channel_one = 'Telesales Consultants' then o.dsc_channel_four else d.dsc_channel_four end, o.dsc_channel_four) ,
                 coalesce(case when o.dsc_channel_one = 'Sales Consultants' or o.dsc_channel_one = 'Corporate Consultants' or o.dsc_channel_one = 'Telesales Consultants' then o.dsc_channel_five else d.dsc_channel_five end, o.dsc_channel_five) ,
                 c.dsc_channel_type,
-                flg_new_customer
+                CASE WHEN Q.cod_order_nr IS NOT NULL THEN true ELSE false END
 
             UNION ALL
 
