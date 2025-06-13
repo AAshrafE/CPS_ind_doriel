@@ -21,6 +21,7 @@
                 
                 null AS brand,
                 c.dsc_channel_type as channel_type,
+                flg_new_customer,
                 
                 count(distinct case when mtr_gross_items > 0 then cod_order else null end) as valid,
                 count(distinct case when mtr_net > 0 then cod_order else null end) as net,
@@ -64,7 +65,7 @@
                 0 uninstalls,
                 0 pageviews
 
-            FROM process_pg_dwh.pg_dwh_central_marketing_item o
+            FROM consume_pg_dwh.view_pg_dwh_central_marketing_item o
             LEFT JOIN
                 (SELECT DISTINCT dsc_channel_one, dsc_channel_two, dsc_channel_three, dsc_channel_four, dsc_channel_five, dsc_channel_type
                 ,row_number() OVER ( PARTITION BY dsc_channel_one, dsc_channel_two, dsc_channel_three, dsc_channel_four, dsc_channel_five ORDER BY sk_channel ) AS RN 
@@ -128,7 +129,8 @@
                 coalesce(case when o.dsc_channel_one = 'Sales Consultants' or o.dsc_channel_one = 'Corporate Consultants' or o.dsc_channel_one = 'Telesales Consultants' then o.dsc_channel_three else d.dsc_channel_three end, o.dsc_channel_three) ,
                 coalesce(case when o.dsc_channel_one = 'Sales Consultants' or o.dsc_channel_one = 'Corporate Consultants' or o.dsc_channel_one = 'Telesales Consultants' then o.dsc_channel_four else d.dsc_channel_four end, o.dsc_channel_four) ,
                 coalesce(case when o.dsc_channel_one = 'Sales Consultants' or o.dsc_channel_one = 'Corporate Consultants' or o.dsc_channel_one = 'Telesales Consultants' then o.dsc_channel_five else d.dsc_channel_five end, o.dsc_channel_five) ,
-                c.dsc_channel_type
+                c.dsc_channel_type,
+                flg_new_customer
 
             UNION ALL
 
@@ -152,6 +154,7 @@
 
             null AS brand,
             dsc_channel_type channel_type,
+            null flg_new_customer,
 
                     --
                 
@@ -221,6 +224,7 @@
 
             null AS brand,
             dsc_channel_type channel_type,
+            null flg_new_customer,
 
                     --
                 
@@ -291,6 +295,7 @@
 
             null AS brand,
             dsc_channel_type channel_type,
+            null flg_new_customer,
 
                     --
                 
@@ -367,6 +372,7 @@
 
             null AS brand,
             null channel_type,
+            null flg_new_customer,
 
                     --
                 
@@ -438,6 +444,7 @@
 
             null AS brand,
             dsc_channel_type channel_type,
+            null flg_new_customer,
 
                     --      
                 0 valid,
@@ -507,6 +514,7 @@
 
             null AS brand,
             dsc_channel_type channel_type,
+            null flg_new_customer,
 
                     --      
                 0 valid,
@@ -581,6 +589,7 @@
             dsc_channel_five channel_5,
             'Jumia' AS brand,
             dsc_channel_type channel_type,
+            null flg_new_customer,
                     --
                 0 valid,
                 0 net,
@@ -653,6 +662,7 @@
                 'NA',
                 null AS brand,
                 'Subsidy' channel_type,
+                null flg_new_customer,
                     0 as valid,
                     0 net,
                 0 As valid_items,   
@@ -730,6 +740,7 @@
             CASE WHEN channel_5 IS NULL OR channel_5 = 'Not Tracked' THEN 'Not Tracked' ELSE channel_5 END channel_5,
             brand AS Brand,
             channel_type AS Channel_Type,
+            flg_new_customer,
                 --
             SUM(valid) AS Gross_orders,
             SUM(net) AS Net_orders,
@@ -781,7 +792,8 @@
             CASE WHEN channel_4 IS NULL OR channel_4 = 'Not Tracked' THEN 'Not Tracked' ELSE channel_4 END,
             CASE WHEN channel_5 IS NULL OR channel_5 = 'Not Tracked' THEN 'Not Tracked' ELSE channel_5 END,
             brand,
-            channel_type
+            channel_type,
+            flg_new_customer
             )
 
             select * from final
